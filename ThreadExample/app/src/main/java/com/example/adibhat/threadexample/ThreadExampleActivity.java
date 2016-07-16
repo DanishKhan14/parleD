@@ -127,7 +127,7 @@ public class ThreadExampleActivity extends AppCompatActivity {
                     }
 
                     try {
-                        Thread.sleep(8000);
+                        Thread.sleep(10000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -191,6 +191,12 @@ public class ThreadExampleActivity extends AppCompatActivity {
         };
         Thread mythread = new Thread(runnable);
         mythread.start();
+    }
+
+    public void switchActivity(View view)
+    {
+        Intent intent = new Intent(this, ViewAllTasksActivity.class);
+        startActivity(intent);
     }
 
 }
