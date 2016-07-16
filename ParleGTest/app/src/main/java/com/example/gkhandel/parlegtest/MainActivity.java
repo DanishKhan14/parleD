@@ -1,19 +1,27 @@
 package com.example.gkhandel.parlegtest;
 
 import android.Manifest;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -24,6 +32,7 @@ import android.widget.AdapterView;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.apache.http.client.HttpClient;
@@ -37,6 +46,7 @@ import com.google.android.gms.location.places.AutocompletePrediction;
 import com.google.android.gms.location.places.Place;
 import com.google.android.gms.location.places.PlaceBuffer;
 import com.google.android.gms.location.places.Places;
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 
@@ -70,6 +80,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener{
     protected GoogleApiClient mGoogleApiClient;
@@ -95,6 +106,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private double longitude;
     public String Content;
 
+    private GoogleMap mMap;
+    private LocationManager locationManager;
+    private String provider;
+    double latitudeFromGPS, longitudeFromGPS;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +133,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         mAdapter = new PlaceAutocompleteAdapter(this, mGoogleApiClient, BOUNDS_GREATER_SYDNEY,
                 null);
         mAutocompleteView.setAdapter(mAdapter);
+
+        // for our app
+        Utils.allTasks = new ConcurrentHashMap<String, Task>();
+
+        // notification stuff
+        mBuilder = new NotificationCompat.Builder(this);
+        mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        // for notification click to lead to new activity
+        resultIntent = new Intent(this, ViewAllTasksActivity.class);
+        stackBuilder = TaskStackBuilder.create(this);
+        stackBuilder.addParentStack(ViewAllTasksActivity.class);
+
+        //startBgThreadOld();
+        startAppActivitiesBgThread();
     }
 
     /**
@@ -236,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                             Double.parseDouble(radEdit.getText().toString()),new Date(),
                             new Date(),Integer.parseInt(priorityEdit.getText().toString()), Task.ST_NOT_DONE);
                     new LongOperation().execute();
-                    new GetOperation().execute();
+                    //new GetOperation().execute();
                     //new GetOperation().execute();
                 //} catch (ParseException e) {
                   //  e.printStackTrace();
@@ -380,8 +411,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             //UI Element
             //uiUpdate.setText("Output : ");
-            Dialog.setMessage("Connecting server .. Please Wait..");
-            Dialog.show();
+            //Dialog.setMessage("Connecting server .. Please Wait..");
+           // Dialog.show();
         }
 
         // Call after onPreExecute method
@@ -449,9 +480,27 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
 
             } else {
-                Dialog.setMessage("Content : "+ Content);
+                //Dialog.setMessage("Content : "+ Content);
+                //Dialog.show();
+                try {
+                    JSONArray contentArray = new JSONArray(Content);
+                    for(int i=0;i<contentArray.length();i++) {
+                        Task task = new Task((JSONObject) contentArray.get(i));
+                        Log.i(TAG, task.getJSONObject().toString() + " Distance: " +Utils.distance(task.getLatitude(), currentLat, task.getLongitude(), currentLong));
+
+                        if(!Utils.allTasks.containsKey(task.getTaskId())) {
+                            Utils.allTasks.put(task.getTaskId(), task);
+                        }
+                    }
+                   // Dialog.setMessage("Success : "+ Content);
+                    //Dialog.show();
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                } catch(ParseException e) {
+                    e.printStackTrace();
+                }
                 //Dialog.setMessage("Network Problem.. Check your Internet Connection or try after sometime");
-                Dialog.show();
+
                 //parse Json Array over here
                 //uiUpdate.setText("Output : "+Content);
                 /*try {
@@ -464,6 +513,167 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
 
             }
         }
+
+    }
+
+
+    // Concurrency Logic
+    // for notifications
+    int notificationNum;
+    NotificationCompat.Builder mBuilder;
+    NotificationManager mNotificationManager;
+    Intent resultIntent;
+    TaskStackBuilder stackBuilder;
+
+    // for our app
+    Double currentLat, currentLong;
+
+    Handler handler = new Handler() {
+
+        @Override
+        public void handleMessage(Message msg) {
+            Bundle bundle = msg.getData();
+
+            // Details for notification
+            ArrayList<String> relevantTasks = bundle.getStringArrayList("relevantTasks");
+            StringBuilder notificationContent = new StringBuilder();
+            for (String task : relevantTasks) {
+                notificationContent.append(task);
+                notificationContent.append("\n");
+            }
+
+            // Adds the Intent that starts the Activity to the top of the stack
+            stackBuilder.addNextIntent(resultIntent);
+            PendingIntent resultPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
+            mBuilder.setContentIntent(resultPendingIntent);
+
+            // Populate notification details
+            mBuilder.setSmallIcon(R.drawable.notification_template_icon_bg);
+            mBuilder.setContentTitle(relevantTasks.size() + " Todo tasks here!");
+            mBuilder.setContentText(notificationContent.toString());
+
+            // notificationID allows you to update the notification later on.
+            mNotificationManager.notify(++notificationNum, mBuilder.build());
+        }
+
+
+    };
+
+    public void startAppActivitiesBgThread() {
+
+        Runnable taskPoller = new Runnable() {
+
+            @Override
+            public void run() {
+                while (true) {
+                    Message msg = handler.obtainMessage();
+                    Bundle bundle = new Bundle();
+
+                    //TODO :
+                    setCurrentLocation();
+                    Log.i(TAG,"Current Location: " + currentLat.toString() + " " +currentLong.toString());
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            new GetOperation().execute();
+                        }
+                    });
+                    //updateAllTasks();
+                    ArrayList<String> relevantTasks = getRelevantTasks();
+
+                    // temp
+                    //relevantTasks.add("Task 1 : do this");
+                    //relevantTasks.add("Task 2 : do that");
+
+                    if (relevantTasks.size() > 0) {
+                        //bundle.putString("numberOfTasks", String.valueOf(relevantTasks.size()));
+                        bundle.putStringArrayList("relevantTasks", relevantTasks);
+                        msg.setData(bundle);
+                        handler.sendMessage(msg);
+                    }
+
+                    try {
+                        Thread.sleep(8000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+        Thread taskPollThread = new Thread(taskPoller);
+        taskPollThread.start();
+    }
+
+    private void updateAllTasks() {
+        new GetOperation().execute();
+        // populate task via Content String
+    }
+
+    //TODO: inject location code
+    private void setCurrentLocation() {
+        // temp
+        getLocation();
+        this.currentLat = latitudeFromGPS;
+        this.currentLong = longitudeFromGPS;
+    }
+
+    /**
+     * Uses Utils.allTasks, this.currentLat, this.currentLong, Task.radius, Task.latitude, Task.longitude
+     *
+     * @return List of matching tasks in string format for displaya s notification
+     */
+    private ArrayList<String> getRelevantTasks() {
+
+        // IFF we get a concurrentModexception or something,
+        // clone this map instead of copying reference
+        ConcurrentHashMap<String, Task> allTasks = Utils.allTasks;
+        ArrayList<String> relevantTasks = new ArrayList<String>();
+
+        for (Task task : allTasks.values()) {
+            if (task.getStatus() == Task.ST_DONE || task.getStatus() == Task.ST_CANCELED)
+                continue;
+            if (Utils.distance(currentLat, task.getLatitude(), currentLong, task.getLongitude()) <= task.getRadius())
+                if(!task.getNotified()) {
+                    task.setNotified(true);
+                    relevantTasks.add(task.getDesc());
+                }
+        }
+
+        return relevantTasks;
+    }
+
+    void getLocation()
+    {
+
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        provider = locationManager.getBestProvider(criteria, false);
+        Location location = locationManager.getLastKnownLocation(provider);
+
+        if (ActivityCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+
+
+// Initialize the location fields
+        if (location != null)
+        {
+            System.out.println("Provider " + provider + " has been selected.");
+
+        }
+        latitudeFromGPS = (double) (location.getLatitude());
+        longitudeFromGPS = (double) (location.getLongitude());
+
+
+
+
 
     }
 

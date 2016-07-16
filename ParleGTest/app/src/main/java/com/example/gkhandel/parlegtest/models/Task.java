@@ -38,6 +38,15 @@ public class Task {
     private final Date endTime; // in mm-dd-yyyy format
     private final Integer priority;
     private String status;
+    private Boolean notified = false;
+
+    public void setNotified(Boolean notified) {
+        this.notified = notified;
+    }
+
+    public Boolean getNotified() {
+        return notified;
+    }
 
     public Task(String name, String desc, Double longitude, Double latitude, Double radius, Date startTime, Date endTime, Integer priority, String status) throws IllegalArgumentException{
         this.taskId = genId();
@@ -174,8 +183,10 @@ public class Task {
         longitude =  Double.parseDouble(jsonObject.get(LONG_KEY).toString());
         latitude = Double.parseDouble(jsonObject.get(LAT_KEY).toString());
         radius = Double.parseDouble(jsonObject.get(RAD_KEY).toString());
-        startTime = formatter.parse(jsonObject.get(ST_TM_KEY).toString());
-        endTime = formatter.parse(jsonObject.get(END_TM_KEY).toString());
+        //startTime = formatter.parse(jsonObject.get(ST_TM_KEY).toString());
+        //endTime = formatter.parse(jsonObject.get(END_TM_KEY).toString());
+        startTime = new Date();
+        endTime = new Date();
         priority = Integer.parseInt(jsonObject.get(PR_KEY).toString());
         status = jsonObject.get(ST_KEY).toString();
     }
