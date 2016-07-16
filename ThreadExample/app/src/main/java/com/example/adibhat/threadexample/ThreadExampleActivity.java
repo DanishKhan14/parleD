@@ -17,14 +17,19 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ThreadExampleActivity extends AppCompatActivity {
 
+    // for notifications
     int notificationNum;
     NotificationCompat.Builder mBuilder;
     NotificationManager mNotificationManager;
     Intent resultIntent;
     TaskStackBuilder stackBuilder;
+
+    // for our app
+    Double currentLat, currentLong;
 
     Handler handler = new Handler() {
 
@@ -54,7 +59,7 @@ public class ThreadExampleActivity extends AppCompatActivity {
             mNotificationManager.notify(++notificationNum, mBuilder.build());
         }
 
-
+        //@Override
         public void handleMessageOld(Message msg) {
             Bundle bundle = msg.getData();
             String string = bundle.getString("myKey");
@@ -78,6 +83,9 @@ public class ThreadExampleActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_thread_example);
 
+        // for our app
+        Utils.allTasks = new ConcurrentHashMap<String, Task>();
+
         // notification stuff
         mBuilder = new NotificationCompat.Builder(this);
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -86,48 +94,94 @@ public class ThreadExampleActivity extends AppCompatActivity {
         resultIntent = new Intent(this, ViewAllTasksActivity.class);
         stackBuilder = TaskStackBuilder.create(this);
         stackBuilder.addParentStack(ViewAllTasksActivity.class);
+
+        //startBgThreadOld();
+        startAppActivitiesBgThread();
     }
 
 
-    public void buttonClick(View view) {
+    public void startAppActivitiesBgThread() {
 
         Runnable taskPoller = new Runnable() {
 
             @Override
             public void run() {
-                Message msg = handler.obtainMessage();
-                Bundle bundle = new Bundle();
+                while (true) {
+                    Message msg = handler.obtainMessage();
+                    Bundle bundle = new Bundle();
 
-                ArrayList<String> relevantTasks = new ArrayList<String>();
-                //TODO :
-                // get current location
-                // get tasks, add details in relevantTasks
-                relevantTasks.add("Task 1 : do this");
-                relevantTasks.add("Task 2 : do that");
 
-                bundle.putString("numberOfTasks", String.valueOf(relevantTasks.size()));
-                bundle.putStringArrayList("relevantTasks", relevantTasks);
-                msg.setData(bundle);
-                handler.sendMessage(msg);
+                    //TODO :
+                    // get current location, fill in currentLat and currentLong
+
+                    ArrayList<String> relevantTasks = getRelevantTasks();
+
+
+                    if (relevantTasks.size() > 0) {
+                        bundle.putString("numberOfTasks", String.valueOf(relevantTasks.size()));
+                        bundle.putStringArrayList("relevantTasks", relevantTasks);
+                        msg.setData(bundle);
+                        handler.sendMessage(msg);
+                    }
+
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         };
         Thread taskPollThread = new Thread(taskPoller);
         taskPollThread.start();
     }
 
+    /**
+     * Uses Utils.allTasks, this.currentLat, this.currentLong, Task.radius, Task.latitude, Task.longitude
+     *
+     * @return List of matching tasks in string format for displaya s notification
+     */
+    private ArrayList<String> getRelevantTasks() {
 
-    public void buttonClickOld(View view) {
+        // IFF we get a concurrentModexception or something,
+        // clone this map instead of copying reference
+        ConcurrentHashMap<String, Task> allTasks = Utils.allTasks;
+        ArrayList<String> relevantTasks = new ArrayList<String>();
+
+        // temp
+        relevantTasks.add("Task 1 : do this");
+        relevantTasks.add("Task 2 : do that");
+
+        for (Task task : allTasks.values()) {
+            if (task.getStatus() == Task.ST_DONE || task.getStatus() == Task.ST_CANCELED)
+                continue;
+            if (Utils.distance(currentLat, task.getLatitude(), currentLong, task.getLongitude()) <= task.getRadius())
+                relevantTasks.add(task.toNotificationString());
+        }
+
+        return relevantTasks;
+    }
+
+
+    public void startBgThreadOld() {
         Runnable runnable = new Runnable() {
             public void run() {
-                Message msg = handler.obtainMessage();
-                Bundle bundle = new Bundle();
-                SimpleDateFormat dateformat =
-                        new SimpleDateFormat("HH:mm:ss MM/dd/yyyy",
-                                Locale.US);
-                String dateString = dateformat.format(new Date());
-                bundle.putString("myKey", dateString);
-                msg.setData(bundle);
-                handler.sendMessage(msg);
+                while (true) {
+                    Message msg = handler.obtainMessage();
+                    Bundle bundle = new Bundle();
+                    SimpleDateFormat dateformat =
+                            new SimpleDateFormat("HH:mm:ss MM/dd/yyyy",
+                                    Locale.US);
+                    String dateString = dateformat.format(new Date());
+                    bundle.putString("myKey", dateString);
+                    msg.setData(bundle);
+                    handler.sendMessage(msg);
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        System.out.println("Thread was interrupted");
+                    }
+                }
             }
         };
         Thread mythread = new Thread(runnable);

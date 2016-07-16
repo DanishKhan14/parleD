@@ -20,11 +20,10 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Press Me"
+        android:text="Add Task"
         android:id="@+id/button"
         android:layout_below="@+id/myTextView"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="75dp"
-        android:clickable="false"
-        android:onClick="buttonClick" />
+        android:clickable="false" />
 </RelativeLayout>
