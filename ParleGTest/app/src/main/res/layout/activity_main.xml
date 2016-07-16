@@ -20,18 +20,6 @@
         android:layout_height="wrap_content"
         android:id="@+id/editRadius"
         android:hint="task radius"/>
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/editStTime"
-        android:hint="start time"/>
-
-    <EditText
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/editEndTime"
-        android:hint="end time"/>
-
 
     <EditText
         android:layout_width="match_parent"

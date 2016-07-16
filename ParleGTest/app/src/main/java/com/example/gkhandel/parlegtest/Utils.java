@@ -2,12 +2,15 @@ package com.example.gkhandel.parlegtest;
 
 import com.example.gkhandel.parlegtest.models.Task;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 
 public class Utils {
 
     public static ConcurrentHashMap<String, Task> allTasks;
+    public static  ArrayList<String> relevantTasks;
 
     public static double distance(double lat1, double lat2, double lon1,
                                   double lon2) {

@@ -249,8 +249,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
                 descEdit = (EditText) findViewById(R.id.editDesc);
 
                 radEdit = (EditText) findViewById(R.id.editRadius);
-                stEdit = (EditText) findViewById(R.id.editStTime);
-                endEdit = (EditText) findViewById(R.id.editEndTime);
+                //stEdit = (EditText) findViewById(R.id.editStTime);
+                //endEdit = (EditText) findViewById(R.id.editEndTime);
                 priorityEdit = (EditText) findViewById(R.id.editPriority);
 
                 SimpleDateFormat formatter = new SimpleDateFormat("mm-dd-yyyy");
@@ -627,7 +627,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
         // IFF we get a concurrentModexception or something,
         // clone this map instead of copying reference
         ConcurrentHashMap<String, Task> allTasks = Utils.allTasks;
-        ArrayList<String> relevantTasks = new ArrayList<String>();
+        Utils.relevantTasks = new ArrayList<String>();
 
         for (Task task : allTasks.values()) {
             if (task.getStatus() == Task.ST_DONE || task.getStatus() == Task.ST_CANCELED)
@@ -635,11 +635,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
             if (Utils.distance(currentLat, task.getLatitude(), currentLong, task.getLongitude()) <= task.getRadius())
                 if(!task.getNotified()) {
                     task.setNotified(true);
-                    relevantTasks.add(task.getDesc());
+                    Utils.relevantTasks.add(task.getTaskId());
                 }
         }
 
-        return relevantTasks;
+        return Utils.relevantTasks;
     }
 
     void getLocation()
