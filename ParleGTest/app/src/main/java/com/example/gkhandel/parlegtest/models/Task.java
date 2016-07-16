@@ -2,9 +2,7 @@ package com.example.gkhandel.parlegtest.models;
 
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONStringer;
 
-import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -16,7 +14,7 @@ import java.util.Random;
 public class Task {
     private static final int ID_LENGTH = 40;
     private static final String NAME_KEY = "name";
-    private static final String ID_KEY = "id";
+    private static final String ID_KEY = "taskId";
     private static final String DESC_KEY = "desc";
     private static final String LONG_KEY = "longitude";
     private static final String LAT_KEY = "latitude";
@@ -25,9 +23,13 @@ public class Task {
     private static final String END_TM_KEY = "endTime";
     private static final String PR_KEY = "priority";
     private static final String ST_KEY = "status";
+    public static final String ST_CANCELED = "CANCELED";
+    public static final String ST_NOT_DONE = "NOT YET DONE";
+    public static final String ST_PROGRESS =  "IN PROGRESS";
+    public static final String ST_DONE = "DONE";
 
+    private final String taskId;
     private final String name;
-    private final String id;
     private final String desc;
     private final Double longitude;
     private final Double latitude;
@@ -37,8 +39,8 @@ public class Task {
     private final Integer priority;
     private String status;
 
-    public Task(String name, String desc, Double longitude, Double latitude, Double radius, Date startTime, Date endTime, Integer priority, String status) {
-        this.id = genId();
+    public Task(String name, String desc, Double longitude, Double latitude, Double radius, Date startTime, Date endTime, Integer priority, String status) throws IllegalArgumentException{
+        this.taskId = genId();
         this.name = name;
         this.desc = desc;
         this.longitude = longitude;
@@ -47,6 +49,9 @@ public class Task {
         this.startTime = startTime;
         this.endTime = endTime;
         this.priority = priority;
+        if(!status.equals(ST_CANCELED) && !status.equals(ST_NOT_DONE) && !status.equals(ST_PROGRESS) && !status.equals(ST_DONE)) {
+            throw new IllegalArgumentException("Illegal status type");
+        }
         this.status = status;
     }
 
@@ -65,10 +70,10 @@ public class Task {
     }
 
     /**
-     * @return the id
+     * @return the taskId
      */
-    public String getId() {
-        return id;
+    public String getTaskId() {
+        return taskId;
     }
 
     /**
@@ -142,7 +147,7 @@ public class Task {
 
         JSONObject jsonObject = new JSONObject();
 
-        jsonObject.put(ID_KEY, id);
+        jsonObject.put(ID_KEY, taskId);
         jsonObject.put(NAME_KEY, name);
         jsonObject.put(DESC_KEY, desc);
         jsonObject.put(LONG_KEY, longitude);
@@ -163,7 +168,7 @@ public class Task {
      */
     public Task(JSONObject jsonObject) throws JSONException, ParseException {
         SimpleDateFormat formatter = new SimpleDateFormat("mm-dd-yyyy");
-        id = jsonObject.get(ID_KEY).toString();
+        taskId = jsonObject.get(ID_KEY).toString();
         name = jsonObject.get(NAME_KEY).toString();
         desc  = jsonObject.get(DESC_KEY).toString();
         longitude =  Double.parseDouble(jsonObject.get(LONG_KEY).toString());
@@ -189,6 +194,6 @@ public class Task {
         }
 
         Task otherTask = (Task) other;
-        return id.equals(otherTask.id);
+        return taskId.equals(otherTask.taskId);
     }
 }
