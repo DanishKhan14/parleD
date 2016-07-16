@@ -1,21 +1,30 @@
 package com.example.gkhandel.parlegtest;
 
 import android.app.Activity;
+import android.app.NotificationManager;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.Gravity;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.Toast;
 
 import com.example.gkhandel.parlegtest.models.Task;
 
@@ -38,13 +47,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ViewAllTasksActivity extends AppCompatActivity {
+public class ViewAllTasksActivity extends AppCompatActivity  {
 
     List<Button> btn = new ArrayList<Button>();
     LinearLayout linearLayout;
     LinearLayout linearLayouttmp; // no fucking idea
     ScrollView scrollview;
     final static Map<Integer, String> idToTaskId = new HashMap<>();
+    private GestureDetectorCompat gestureDetectorCompat;
+    static Boolean clickFlag = true;
 
     /*@Override
     public void onStop() {
@@ -54,8 +65,16 @@ public class ViewAllTasksActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        String ns = Context.NOTIFICATION_SERVICE;
+        NotificationManager nMgr = (NotificationManager) getApplicationContext().getSystemService(ns);
+        nMgr.cancelAll();
         finish();
     }
+
+
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,6 +204,14 @@ public class ViewAllTasksActivity extends AppCompatActivity {
 
             // Send done message to server
             new LongOperation().execute();
+            /*while(clickFlag) {
+
+            }*/
+            //String ns = Context.NOTIFICATION_SERVICE;
+            //NotificationManager nMgr = (NotificationManager) getApplicationContext().getSystemService(ns);
+            //nMgr.cancelAll();
+            //finish();
+
         }
 
 
@@ -276,6 +303,11 @@ public class ViewAllTasksActivity extends AppCompatActivity {
 
 
                 } else {
+                   clickFlag=false;
+                    //Intent intent = new Intent(Intent.ACTION_MAIN);
+                    //intent.addCategory(Intent.CATEGORY_HOME);
+                    //intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    //startActivity(intent);
 
                 /*try {
                     JSONObject jsonObj = new JSONObject(res);
@@ -298,6 +330,9 @@ public class ViewAllTasksActivity extends AppCompatActivity {
         }
 
     }
+
+
+
 
 }
 

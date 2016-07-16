@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.O
     private AutoCompleteTextView mAutocompleteView;
 
     private static final LatLngBounds BOUNDS_GREATER_SYDNEY = new LatLngBounds(
-            new LatLng(-34.041458, 150.790100), new LatLng(-33.682247, 151.383362));
+            new LatLng(47.6062, -122.3321), new LatLng(47.6740, -122.1215));
 
     public static final String TAG = "LJKLJ";
 
