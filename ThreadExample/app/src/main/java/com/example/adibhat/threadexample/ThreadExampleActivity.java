@@ -97,6 +97,7 @@ public class ThreadExampleActivity extends AppCompatActivity {
 
         //startBgThreadOld();
         startAppActivitiesBgThread();
+
     }
 
 
@@ -110,22 +111,23 @@ public class ThreadExampleActivity extends AppCompatActivity {
                     Message msg = handler.obtainMessage();
                     Bundle bundle = new Bundle();
 
-
                     //TODO :
-                    // get current location, fill in currentLat and currentLong
-
+                    setCurrentLocation();
                     ArrayList<String> relevantTasks = getRelevantTasks();
 
+                    // temp
+                    relevantTasks.add("Task 1 : do this");
+                    relevantTasks.add("Task 2 : do that");
 
                     if (relevantTasks.size() > 0) {
-                        bundle.putString("numberOfTasks", String.valueOf(relevantTasks.size()));
+                        //bundle.putString("numberOfTasks", String.valueOf(relevantTasks.size()));
                         bundle.putStringArrayList("relevantTasks", relevantTasks);
                         msg.setData(bundle);
                         handler.sendMessage(msg);
                     }
 
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(8000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -134,6 +136,13 @@ public class ThreadExampleActivity extends AppCompatActivity {
         };
         Thread taskPollThread = new Thread(taskPoller);
         taskPollThread.start();
+    }
+
+    //TODO: inject location code
+    private void setCurrentLocation() {
+        // temp
+        this.currentLat = Double.parseDouble("0.0");
+        this.currentLong = Double.parseDouble("0.0");
     }
 
     /**
@@ -147,10 +156,6 @@ public class ThreadExampleActivity extends AppCompatActivity {
         // clone this map instead of copying reference
         ConcurrentHashMap<String, Task> allTasks = Utils.allTasks;
         ArrayList<String> relevantTasks = new ArrayList<String>();
-
-        // temp
-        relevantTasks.add("Task 1 : do this");
-        relevantTasks.add("Task 2 : do that");
 
         for (Task task : allTasks.values()) {
             if (task.getStatus() == Task.ST_DONE || task.getStatus() == Task.ST_CANCELED)
